@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glass Gallery ✨</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+  body {
+    min-height:100vh;
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);
+    background-size:400% 400%;
+    animation:bg 15s ease infinite;
+    padding:40px 20px;
+  }
+  @keyframes bg { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
+  .container { max-width:1200px; margin:0 auto; }
+  header { text-align:center; color:#fff; margin-bottom:40px; }
+  
+  /* Общие настройки для заголовка */
+  header h1 { 
+    font-size:clamp(2rem,5vw,3.5rem); 
+    font-weight:800; 
+    text-shadow:0 4px 30px rgba(0,0,0,.2); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  /* Эффект применяется только к тексту внутри span */
+  header h1 span.text {
+    background: linear-gradient(90deg, #ffffff, #d4d4d4, #ffffff, #f0f0f0, #ffffff);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 5s linear infinite;
+    text-shadow: none; /* Убираем тень, чтобы не мешала градиенту */
+  }
+  
+  @keyframes shine {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .filters { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin-bottom:40px; }
+  .filter-btn {
+    padding:10px 24px; border:1px solid rgba(255,255,255,.3);
+    background:rgba(255,255,255,.1); backdrop-filter:blur(10px);
+    color:#fff; border-radius:50px; cursor:pointer; font-size:.95rem;
+    transition:all .3s ease;
+  }
+  .filter-btn:hover { background:rgba(255,255,255,.25); transform:translateY(-2px); }
+  .filter-btn.active { background:rgba(255,255,255,.9); color:#764ba2; }
+  .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; }
+  .card {
+    position:relative; height:240px; border-radius:20px; overflow:hidden;
+    cursor:pointer; border:1px solid rgba(255,255,255,.3);
+    box-shadow:0 8px 32px rgba(0,0,0,.15);
+    transition:all .4s cubic-bezier(.4,0,.2,1);
+    animation:in .5s ease backwards;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+  }
+  @keyframes in { from{opacity:0;transform:translateY(30px) scale(.9);} to{opacity:1;transform:none;} }
+  .card:hover { transform:translateY(-8px) scale(1.02); box-shadow:0 20px 50px rgba(0,0,0,.3); }
+  .card img { width:100%; height:100%; object-fit:cover; transition:transform .6s ease; display:block; }
+  .card:hover img { transform:scale(1.1); }
+  .card-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to top,rgba(0,0,0,.8),transparent 60%);
+    display:flex; align-items:flex-end; padding:20px; opacity:0; transition:opacity .4s;
+  }
+  .card:hover .card-overlay { opacity:1; }
+  .card-overlay h3 { color:#fff; font-size:1.1rem; line-height:1.3; }
+  .card-overlay .cat-tag {
+    display:inline-block; font-size:.7rem; text-transform:uppercase;
+    background:rgba(255,255,255,.25); padding:2px 10px; border-radius:20px;
+    margin-bottom:6px; letter-spacing:1px;
+  }
+  .modal {
+    position:fixed; inset:0; background:rgba(0,0,0,.8); backdrop-filter:blur(15px);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; visibility:hidden; transition:all .4s; z-index:1000;
+  }
+  .modal.open { opacity:1; visibility:visible; }
+  .modal-content { max-width:90vw; max-height:85vh; border-radius:20px; overflow:hidden;
+    transform:scale(.8); transition:transform .4s cubic-bezier(.34,1.56,.64,1); background:#000; }
+  .modal.open .modal-content { transform:scale(1); }
+  .modal-content img { display:block; max-width:90vw; max-height:85vh; object-fit:contain; }
+  .close-btn {
+    position:absolute; top:20px; right:20px; width:50px; height:50px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.15);
+    backdrop-filter:blur(10px); color:#fff; font-size:28px; cursor:pointer;
+    transition:all .3s; z-index:1001; display:flex; align-items:center; justify-content:center;
+  }
+  .close-btn:hover { background:rgba(255,255,255,.3); transform:rotate(90deg); }
+  .counter { text-align:center; color:#fff; margin-top:30px; opacity:.8; font-size:.9rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <!-- Смайлик остался снаружи, поэтому он сохранит свой оригинальный цвет -->
+    <h1>✨ <span class="text">Glass Gallery</span></h1>
+  </header>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">Все</button>
+    <button class="filter-btn" data-filter="nature">🌿 Природа</button>
+    <button class="filter-btn" data-filter="city">🏙️ Город</button>
+    <button class="filter-btn" data-filter="food">🍕 Еда</button>
+    <button class="filter-btn" data-filter="animals">🐾 Животные</button>
+    <button class="filter-btn" data-filter="tech">💻 Технологии</button>
+    <button class="filter-btn" data-filter="sport">⚽ Спорт</button>
+    <button class="filter-btn" data-filter="abstract">🎨 Абстракция</button>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+  <p class="counter" id="counter"></p>
+</div>
+
+<div class="modal" id="modal">
+  <button class="close-btn" id="closeBtn">&times;</button>
+  <div class="modal-content"><img id="modalImg" alt=""></div>
+</div>
+
+<script>
+  const items = [
+    { id: 1,  title: 'Горный рассвет',         cat: 'nature',   src: "https://cs8.pikabu.ru/post_img/2018/02/14/10/1518626332125257702.jpg" },
+    { id: 2,  title: 'Лесная тропа',           cat: 'nature',   src: "https://ooptlo.ru/assets/images/resources/215/dsc-0651.jpg" },
+    { id: 3,  title: 'Океанский бриз',         cat: 'nature',   src: "https://img.magnific.com/free-photo/wide-sea-panorama-sunset-clouds-horizon-warm-evening-colors_169016-72433.jpg?semt=ais_hybrid&w=740&q=80" },
+    { id: 4,  title: 'Закат над водой',        cat: 'nature',   src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVMdxlsFj_zOO0x0d-GD6VevA6eP9o2DnZ8KKquqq7kP48Gk7hstnVDXda&s=10" },
+    { id: 5,  title: 'Ночной мегаполис',       cat: 'city',     src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQi245UIr2Vz0fq2zXBwzyjGzGk9dIfkVHkivS0_Fyv2OMIFjV-yYhptM_r&s=10" },
+    { id: 6,  title: 'Улочки старого города',  cat: 'city',     src: "https://99px.ru/sstorage/53/2015/05/tmb_130417_4677.jpg" },
+    { id: 7,  title: 'Современная архитектура', cat: 'city',    src: "https://novate.ru/files/u39778/gorod-futuristika-futurizm-budushchee-ne.jpg" },
+    { id: 8,  title: 'Итальянская пицца',       cat: 'food',     src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRI-BXq9erzIAM1DiwMjf6__cS4PJypfg5lyMpbCbsqjPr3sAtZfo5BN6w&s=10" },
+    { id: 9,  title: 'Утренний кофе',           cat: 'food',     src: "https://img.magnific.com/free-photo/high-angle-croissants-coffee-cup_23-2148877594.jpg?semt=ais_hybrid&w=740&q=80"},
+    { id: 10, title: 'Шоколадный десерт',      cat: 'food',     src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQgKpTCUFZHrywNLaNELaTC7kNS3fjPG6qvEOk5U5isBaYMbEPG7hsHRbA&s=10" },
+    { id: 11, title: 'Рыжий кот',              cat: 'animals',  src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8wj-BQbHeKVnAGpvClHo0FdVE_DufU1fmafhbz4W5eQ&s=10" },
+    { id: 12, title: 'Верный друг',            cat: 'animals',  src: "https://www.purina.ru/sites/default/files/styles/ttt_image_510/public/2022-02/pomeranskii-spiz.jpg?itok=8yUpyRT6" },
+    { id: 13, title: 'Птица в полёте',         cat: 'animals',  src: "https://c-rope.de/wp-content/uploads/2025/05/Voegel-im-Flug-fotografieren-2.jpg" },
+    { id: 14, title: 'Рабочее место',          cat: 'tech',     src: "https://optim.tildacdn.com/tild3937-3937-4661-b531-646139326336/-/format/webp/10.jpg.webp" },
+    { id: 15, title: 'Современный смартфон',   cat: 'tech',     src: "https://assets.prophotos.ru/data/articles/0002/3637/206420/original.jpg" },
+    { id: 16, title: 'Код на экране',          cat: 'tech',     src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSTS771zbgWd8warR8_8tpAV7XPxCxsOFT5jqVJE3d_wA&s=10" },
+    { id: 17, title: 'Футбольный матч',        cat: 'sport',    src: "https://cdn.forbes.ru/files/story_images/stadion.jpg" },
+    { id: 18, title: 'Утренняя пробежка',      cat: 'sport',    src: "https://www.sports.kz/upload/2024-05/695_66462b259e8cd.jpg" },
+    { id: 19, title: 'Абстрактная текстура',   cat: 'abstract', src: "https://avatanplus.com/files/resources/original/5a2baa959d38e1603a92588c.jpg" },
+    { id: 20, title: 'Взрыв цвета',            cat: 'abstract', src: "https://img.magnific.com/premium-photo/vibrant-explosion-burst-bright-rainbow-chalk-powder-dust-cloud-isolated-black-background_1257736-18869.jpg?semt=ai_hybrid&w=740&q=80" },
+  ];
+
+  const gallery = document.getElementById('gallery');
+  const counter = document.getElementById('counter');
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modalImg');
+  const closeBtn = document.getElementById('closeBtn');
+
+  function render(list) {
+    gallery.innerHTML = '';
+    list.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = `${i * 0.04}s`;
+      card.innerHTML = `
+        <img src="${item.src}" alt="${item.title}" loading="lazy"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="card-overlay">
+          <div>
+            <span class="cat-tag">${item.cat}</span>
+            <h3>${item.title}</h3>
+          </div>
+        </div>`;
+      // fallback — если картинка не загрузилась
+      const fallback = document.createElement('div');
+      fallback.style.cssText = 'position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:.85rem;text-align:center;padding:20px;background:linear-gradient(135deg,#667eea,#764ba2)';
+      fallback.innerHTML = `<span style="font-size:2rem;margin-bottom:8px">🖼️</span><span>${item.title}<br><small style="opacity:.7">${item.src}</small></span>`;
+      card.appendChild(fallback);
+
+      card.addEventListener('click', () => {
+        modalImg.src = item.src;
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+      gallery.appendChild(card);
+    });
+    counter.textContent = `Показано: ${list.length} из ${items.length}`;
+  }
+
+  closeBtn.addEventListener('click', () => {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+  modal.addEventListener('click', e => { if (e.target === modal) closeBtn.click(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBtn.click(); });
+
+  document.getElementById('filters').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    render(f === 'all' ? items : items.filter(i => i.cat === f));
+  });
+
+  render(items);
+</script>
+</body>
+</html>
